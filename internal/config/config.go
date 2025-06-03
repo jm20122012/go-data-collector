@@ -15,6 +15,9 @@ type AppConfig struct {
 	DBPass string `mapstructure:"DB_PASS"`
 	DBHost string `mapstructure:"DB_HOST"`
 	DBPort string `mapstructure:"DB_PORT"`
+
+	// Avtech Device Configuration
+	AvtechURL string `mapstructure:"AVTECH_URL"`
 }
 
 // AppConfigInstance is the instance of the application configuration
