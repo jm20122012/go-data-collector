@@ -123,7 +123,7 @@ CREATE TABLE public.avtech_data (
     temp_f double precision NOT NULL,
     temp_c double precision NOT NULL,
     humidity double precision NOT NULL,
-    device_id text NOT NULL,
+    device_id integer NOT NULL,
     device_type_id integer NOT NULL
 );
 
@@ -158,12 +158,36 @@ ALTER SEQUENCE public.avtech_data_id_seq OWNED BY public.avtech_data.id;
 
 CREATE TABLE public.device_list (
     id integer NOT NULL,
-    name text NOT NULL,
+    device_name character varying NOT NULL,
+    location character varying,
+    ip_address character varying,
     device_type_id integer NOT NULL
 );
 
 
 ALTER TABLE public.device_list OWNER TO postgres;
+
+--
+-- Name: device_list_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.device_list_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.device_list_id_seq OWNER TO postgres;
+
+--
+-- Name: device_list_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.device_list_id_seq OWNED BY public.device_list.id;
+
 
 --
 -- Name: device_types; Type: TABLE; Schema: public; Owner: postgres
@@ -192,6 +216,13 @@ ALTER TABLE ONLY public.avtech_data ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: device_list id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_list ALTER COLUMN id SET DEFAULT nextval('public.device_list_id_seq'::regclass);
+
+
+--
 -- Name: ambient_station_data ambient_station_data_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -200,19 +231,11 @@ ALTER TABLE ONLY public.ambient_station_data
 
 
 --
--- Name: avtech_data avtech_data_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: avtech_data avtech_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.avtech_data
-    ADD CONSTRAINT avtech_data_pk PRIMARY KEY (id);
-
-
---
--- Name: avtech_data avtech_data_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.avtech_data
-    ADD CONSTRAINT avtech_data_unique UNIQUE (device_id);
+    ADD CONSTRAINT avtech_data_pkey PRIMARY KEY (device_id, "timestamp");
 
 
 --
@@ -228,7 +251,7 @@ ALTER TABLE ONLY public.device_list
 --
 
 ALTER TABLE ONLY public.device_list
-    ADD CONSTRAINT device_list_unique UNIQUE (name);
+    ADD CONSTRAINT device_list_unique UNIQUE (device_name);
 
 
 --
@@ -245,6 +268,43 @@ ALTER TABLE ONLY public.device_types
 
 ALTER TABLE ONLY public.device_types
     ADD CONSTRAINT device_types_unique UNIQUE (device_type);
+
+
+--
+-- Name: avtech_data_device_type_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX avtech_data_device_type_idx ON public.avtech_data USING btree (device_type_id);
+
+
+--
+-- Name: avtech_data_timestamp_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX avtech_data_timestamp_idx ON public.avtech_data USING btree ("timestamp" DESC);
+
+
+--
+-- Name: avtech_data ts_insert_blocker; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER ts_insert_blocker BEFORE INSERT ON public.avtech_data FOR EACH ROW EXECUTE FUNCTION _timescaledb_functions.insert_blocker();
+
+
+--
+-- Name: avtech_data avtech_data_device_types_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.avtech_data
+    ADD CONSTRAINT avtech_data_device_types_fk FOREIGN KEY (device_type_id) REFERENCES public.device_types(id);
+
+
+--
+-- Name: device_list device_list_device_types_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_list
+    ADD CONSTRAINT device_list_device_types_fk FOREIGN KEY (device_type_id) REFERENCES public.device_types(id);
 
 
 --

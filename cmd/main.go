@@ -50,14 +50,13 @@ func main() {
 
 	wg := &sync.WaitGroup{}
 
-	// Initialize the server with the context, wait group, and logger
-	server := server.NewServer(ctx, wg, logger)
-	server.Start()
+	server := server.NewServer(ctx, cancel, wg, logger, appConfig)
 	wg.Add(1)
+	server.Start()
 
-	wg.Wait()
-	cancel()
-	os.Exit(0)
+	<-ctx.Done() // Wait for context done signal
+	wg.Wait()    // Wait for any go routines with a waitgroup to finish
+	os.Exit(0)   // Exit cleanly
 }
 
 func createLogger(level slog.Level) *slog.Logger {

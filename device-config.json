@@ -1,0 +1,15 @@
+{
+    "devices": {
+        "avtechSensors": [
+            {
+                "deviceId": "avtechSensor1",
+                "ipAddress": "192.168.3.234",
+                "location": "basement-rack",
+                "apiUrl": "/getData.json" 
+            }
+        ],
+        "ambientWeatherStations": [],
+        "aqaraTempSensors": [],
+        "aqaraDoorSensors": []
+    }
+}

@@ -1,0 +1,10 @@
+version: "3"
+dotenv:
+  - .env
+
+includes:
+  sqlc: .taskfiles/sqlc-tasks.yml
+  db: .taskfiles/db-tasks.yml
+
+tasks:
+  default: task -l

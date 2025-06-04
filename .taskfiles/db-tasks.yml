@@ -1,0 +1,5 @@
+version: "3"
+tasks:
+  dump-schema:
+    desc: "Write schema to schema.sql file"
+    cmd: pg_dump -h localhost -U postgres -d data_collector_db --schema-only > schema.sql
