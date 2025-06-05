@@ -3,3 +3,12 @@ tasks:
   dump-schema:
     desc: "Write schema to schema.sql file"
     cmd: pg_dump -h localhost -U postgres -d data_collector_db --schema-only > schema.sql
+  dump-data:
+    desc: "Write data to data.sql file"
+    cmd: pg_dump -h localhost -U postgres -d data_collector_db --data-only > data.sql
+  apply-schema-local:
+    desc: "Applies the schema.sql file to the local database instance"
+    cmd: psql -h localhost -U postgres -d data_collector_db -f schema.sql
+  apply-data-local:
+    desc: "Applies the data.sql file to the local database instance"
+    cmd: psql -h localhost -U postgres -d data_collector_db -f data.sql
