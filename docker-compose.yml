@@ -1,6 +1,6 @@
 services:
   go-data-collector:
-    image: go-data-collector:0.1.0
+    image: go-data-collector:${APP_VERSION}-${GIT_COMMIT_HASH}
     container_name: go-data-collector
     restart: unless-stopped
     volumes:
