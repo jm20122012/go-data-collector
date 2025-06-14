@@ -11,8 +11,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getAllCollectorGroups = `-- name: GetAllCollectorGroups :many
+select id, group_name, enabled, poll_interval_seconds from collector_groups
+`
+
+func (q *Queries) GetAllCollectorGroups(ctx context.Context) ([]CollectorGroup, error) {
+	rows, err := q.db.Query(ctx, getAllCollectorGroups)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CollectorGroup
+	for rows.Next() {
+		var i CollectorGroup
+		if err := rows.Scan(
+			&i.ID,
+			&i.GroupName,
+			&i.Enabled,
+			&i.PollIntervalSeconds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDeviceList = `-- name: GetDeviceList :many
-SELECT id, device_name, location, ip_address, device_type_id, enabled FROM device_list
+SELECT id, device_name, location, ip_address, device_type_id, collector_group_id, enabled, poll_interval_seconds FROM device_list
 `
 
 func (q *Queries) GetDeviceList(ctx context.Context) ([]DeviceList, error) {
@@ -30,7 +59,9 @@ func (q *Queries) GetDeviceList(ctx context.Context) ([]DeviceList, error) {
 			&i.Location,
 			&i.IpAddress,
 			&i.DeviceTypeID,
+			&i.CollectorGroupID,
 			&i.Enabled,
+			&i.PollIntervalSeconds,
 		); err != nil {
 			return nil, err
 		}
@@ -119,6 +150,199 @@ func (q *Queries) GetDeviceListByDeviceTypeName(ctx context.Context, deviceType 
 			&i.Location,
 			&i.IpAddress,
 			&i.DeviceTypeID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDevicesByCollectorGroupID = `-- name: GetDevicesByCollectorGroupID :many
+select id, device_name, location, ip_address, device_type_id, collector_group_id, enabled, poll_interval_seconds from device_list where collector_group_id = $1
+`
+
+func (q *Queries) GetDevicesByCollectorGroupID(ctx context.Context, collectorGroupID pgtype.Int4) ([]DeviceList, error) {
+	rows, err := q.db.Query(ctx, getDevicesByCollectorGroupID, collectorGroupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeviceList
+	for rows.Next() {
+		var i DeviceList
+		if err := rows.Scan(
+			&i.ID,
+			&i.DeviceName,
+			&i.Location,
+			&i.IpAddress,
+			&i.DeviceTypeID,
+			&i.CollectorGroupID,
+			&i.Enabled,
+			&i.PollIntervalSeconds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDevicesByCollectorGroupName = `-- name: GetDevicesByCollectorGroupName :many
+select dl.id, dl.device_name, dl.location, dl.ip_address, dl.device_type_id, dl.collector_group_id, dl.enabled, dl.poll_interval_seconds, cg.group_name
+from device_list dl
+inner join collector_groups cg on dl.collector_group_id = cg.id
+where cg.group_name = $1
+`
+
+type GetDevicesByCollectorGroupNameRow struct {
+	ID                  int32       `db:"id" json:"id"`
+	DeviceName          string      `db:"device_name" json:"device_name"`
+	Location            pgtype.Text `db:"location" json:"location"`
+	IpAddress           pgtype.Text `db:"ip_address" json:"ip_address"`
+	DeviceTypeID        int32       `db:"device_type_id" json:"device_type_id"`
+	CollectorGroupID    pgtype.Int4 `db:"collector_group_id" json:"collector_group_id"`
+	Enabled             pgtype.Bool `db:"enabled" json:"enabled"`
+	PollIntervalSeconds pgtype.Int4 `db:"poll_interval_seconds" json:"poll_interval_seconds"`
+	GroupName           string      `db:"group_name" json:"group_name"`
+}
+
+func (q *Queries) GetDevicesByCollectorGroupName(ctx context.Context, groupName string) ([]GetDevicesByCollectorGroupNameRow, error) {
+	rows, err := q.db.Query(ctx, getDevicesByCollectorGroupName, groupName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDevicesByCollectorGroupNameRow
+	for rows.Next() {
+		var i GetDevicesByCollectorGroupNameRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DeviceName,
+			&i.Location,
+			&i.IpAddress,
+			&i.DeviceTypeID,
+			&i.CollectorGroupID,
+			&i.Enabled,
+			&i.PollIntervalSeconds,
+			&i.GroupName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getEnabledCollectorGroups = `-- name: GetEnabledCollectorGroups :many
+select id, group_name, enabled, poll_interval_seconds from collector_groups where enabled = true
+`
+
+func (q *Queries) GetEnabledCollectorGroups(ctx context.Context) ([]CollectorGroup, error) {
+	rows, err := q.db.Query(ctx, getEnabledCollectorGroups)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CollectorGroup
+	for rows.Next() {
+		var i CollectorGroup
+		if err := rows.Scan(
+			&i.ID,
+			&i.GroupName,
+			&i.Enabled,
+			&i.PollIntervalSeconds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getEnabledDevicesByCollectorGroupID = `-- name: GetEnabledDevicesByCollectorGroupID :many
+select id, device_name, location, ip_address, device_type_id, collector_group_id, enabled, poll_interval_seconds from device_list where collector_group_id = $1 and enabled = true
+`
+
+func (q *Queries) GetEnabledDevicesByCollectorGroupID(ctx context.Context, collectorGroupID pgtype.Int4) ([]DeviceList, error) {
+	rows, err := q.db.Query(ctx, getEnabledDevicesByCollectorGroupID, collectorGroupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeviceList
+	for rows.Next() {
+		var i DeviceList
+		if err := rows.Scan(
+			&i.ID,
+			&i.DeviceName,
+			&i.Location,
+			&i.IpAddress,
+			&i.DeviceTypeID,
+			&i.CollectorGroupID,
+			&i.Enabled,
+			&i.PollIntervalSeconds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getEnabledDevicesByCollectorGroupName = `-- name: GetEnabledDevicesByCollectorGroupName :many
+select dl.id, dl.device_name, dl.location, dl.ip_address, dl.device_type_id, dl.collector_group_id, dl.enabled, dl.poll_interval_seconds, cg.group_name
+from device_list dl
+inner join collector_groups cg on dl.collector_group_id = cg.id
+where cg.group_name = $1 and dl.enabled = true
+`
+
+type GetEnabledDevicesByCollectorGroupNameRow struct {
+	ID                  int32       `db:"id" json:"id"`
+	DeviceName          string      `db:"device_name" json:"device_name"`
+	Location            pgtype.Text `db:"location" json:"location"`
+	IpAddress           pgtype.Text `db:"ip_address" json:"ip_address"`
+	DeviceTypeID        int32       `db:"device_type_id" json:"device_type_id"`
+	CollectorGroupID    pgtype.Int4 `db:"collector_group_id" json:"collector_group_id"`
+	Enabled             pgtype.Bool `db:"enabled" json:"enabled"`
+	PollIntervalSeconds pgtype.Int4 `db:"poll_interval_seconds" json:"poll_interval_seconds"`
+	GroupName           string      `db:"group_name" json:"group_name"`
+}
+
+func (q *Queries) GetEnabledDevicesByCollectorGroupName(ctx context.Context, groupName string) ([]GetEnabledDevicesByCollectorGroupNameRow, error) {
+	rows, err := q.db.Query(ctx, getEnabledDevicesByCollectorGroupName, groupName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetEnabledDevicesByCollectorGroupNameRow
+	for rows.Next() {
+		var i GetEnabledDevicesByCollectorGroupNameRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DeviceName,
+			&i.Location,
+			&i.IpAddress,
+			&i.DeviceTypeID,
+			&i.CollectorGroupID,
+			&i.Enabled,
+			&i.PollIntervalSeconds,
+			&i.GroupName,
 		); err != nil {
 			return nil, err
 		}

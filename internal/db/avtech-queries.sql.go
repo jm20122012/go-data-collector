@@ -13,15 +13,14 @@ import (
 
 const writeAvtechRecord = `-- name: WriteAvtechRecord :exec
 INSERT INTO
-    avtech_data(id, timestamp, temp_f, temp_c, humidity, device_id, device_type_id)
-VALUES (DEFAULT, $1, $2, $3, $4, $5, $6)
+    avtech_data(id, timestamp, temp_f, temp_c, device_id, device_type_id)
+VALUES (DEFAULT, $1, $2, $3, $4, $5)
 `
 
 type WriteAvtechRecordParams struct {
 	Timestamp    pgtype.Timestamptz `db:"timestamp" json:"timestamp"`
 	TempF        float64            `db:"temp_f" json:"temp_f"`
 	TempC        float64            `db:"temp_c" json:"temp_c"`
-	Humidity     float64            `db:"humidity" json:"humidity"`
 	DeviceID     int32              `db:"device_id" json:"device_id"`
 	DeviceTypeID int32              `db:"device_type_id" json:"device_type_id"`
 }
@@ -31,7 +30,6 @@ func (q *Queries) WriteAvtechRecord(ctx context.Context, arg WriteAvtechRecordPa
 		arg.Timestamp,
 		arg.TempF,
 		arg.TempC,
-		arg.Humidity,
 		arg.DeviceID,
 		arg.DeviceTypeID,
 	)

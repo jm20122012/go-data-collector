@@ -2,25 +2,20 @@ package collectors
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"go-data-collector/internal/db"
-	"go-data-collector/internal/utils"
-	"net/http"
-	"strconv"
+	"go-data-collector/internal/devices"
 	"time"
 )
 
 type AvtechCollector struct {
-	CollectorConfig
-	devices []AvtechSensorConfig // List of Avtech devices to collect data from
+	CollectorGroupConfig
+	Devices []*devices.AvtechSensor // List of Avtech devices to collect data from
 }
 
 // NewAvtechCollector creates a new AvtechCollector instance
-func NewAvtechCollector(config CollectorConfig, devices []AvtechSensorConfig) *AvtechCollector {
+func NewAvtechCollector(config CollectorGroupConfig, devices []*devices.AvtechSensor) *AvtechCollector {
 	return &AvtechCollector{
-		CollectorConfig: config,
-		devices:         devices,
+		CollectorGroupConfig: config,
+		Devices:              devices,
 	}
 }
 
@@ -29,7 +24,7 @@ func (c *AvtechCollector) Start() error {
 	c.Logger.Info("Starting Avtech collector...")
 
 	// Collect data from all devices concurrently
-	for _, device := range c.devices {
+	for _, device := range c.Devices {
 		c.Wg.Add(1)
 		go c.collectData(c.Ctx, device)
 	}
@@ -46,8 +41,8 @@ func (c *AvtechCollector) Stop() error {
 	return nil
 }
 
-func (c *AvtechCollector) collectData(ctx context.Context, device AvtechSensorConfig) {
-	c.Logger.Info("collecting avtech sensor data", "deviceName", device.Name, "deviceIP", device.IP)
+func (c *AvtechCollector) collectData(ctx context.Context, device *devices.AvtechSensor) {
+	c.Logger.Info("collecting avtech sensor data", "deviceName", device.Name, "deviceIP", device.IP, "pollInterval", device.PollInterval)
 
 	defer c.Wg.Done()
 
@@ -55,71 +50,14 @@ func (c *AvtechCollector) collectData(ctx context.Context, device AvtechSensorCo
 	ticker := time.NewTicker(device.PollInterval)
 	defer ticker.Stop()
 
-	c.getData(device)
+	device.FetchData()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			c.getData(device)
+			device.FetchData()
 		}
 	}
-}
-
-func (c *AvtechCollector) getData(device AvtechSensorConfig) {
-	c.Logger.Debug("fetching avtech sensor data", "deviceName", device.Name, "deviceIP", device.IP)
-	var response AvtechResponse
-
-	url := fmt.Sprintf("http://%s/getData.json", device.IP)
-	resp, err := http.Get(url)
-	if err != nil {
-		c.Logger.Error("error performing http request for avtech sensor", "deviceName", device.Name, "deviceIP", device.IP, "error", err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		c.Logger.Error("error decoding json for avtech sensor", "deviceName", device.Name, "deviceIP", device.IP, "error", err)
-		return
-	}
-	c.processAvtechResponse(device, response)
-
-}
-
-func (c *AvtechCollector) processAvtechResponse(device AvtechSensorConfig, response AvtechResponse) {
-	c.Logger.Debug("Processing avtech sensor response")
-
-	var tempF float64
-	var tempC float64
-	tempF, err := strconv.ParseFloat(response.Sensor[0].TempF, 32)
-	if err != nil {
-		c.Logger.Error("error converting avtech temp f value to float", "error", err)
-	}
-	tempC, err = strconv.ParseFloat(response.Sensor[0].TempC, 32)
-	if err != nil {
-		c.Logger.Error("error converting avtech temp c value to float", "error", err)
-	}
-
-	timestamp := utils.GetUTCTimestamp()
-	humidity := 0.0
-
-	params := db.WriteAvtechRecordParams{
-		Timestamp:    timestamp,
-		TempF:        tempF,
-		TempC:        tempC,
-		Humidity:     humidity,
-		DeviceID:     int32(device.DeviceID),
-		DeviceTypeID: int32(device.DeviceTypeID),
-	}
-
-	c.Logger.Debug("avtech write params built", "params", params)
-
-	err = c.DBStore.WriteAvtechRecord(c.Ctx, params)
-	if err != nil {
-		c.Logger.Error("error writing avtech record", "error", err)
-	}
-
 }

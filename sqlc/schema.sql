@@ -122,7 +122,6 @@ CREATE TABLE public.avtech_data (
     "timestamp" timestamp with time zone NOT NULL,
     temp_f double precision NOT NULL,
     temp_c double precision NOT NULL,
-    humidity double precision NOT NULL,
     device_id integer NOT NULL,
     device_type_id integer NOT NULL
 );
@@ -153,16 +152,68 @@ ALTER SEQUENCE public.avtech_data_id_seq OWNED BY public.avtech_data.id;
 
 
 --
+-- Name: collector_groups; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.collector_groups (
+    id integer NOT NULL,
+    group_name character varying NOT NULL,
+    enabled boolean DEFAULT (1)::boolean NOT NULL,
+    poll_interval_seconds integer DEFAULT 30
+);
+
+
+ALTER TABLE public.collector_groups OWNER TO postgres;
+
+--
+-- Name: COLUMN collector_groups.enabled; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.collector_groups.enabled IS 'Global flag to enable collection for all devices in this group';
+
+
+--
+-- Name: COLUMN collector_groups.poll_interval_seconds; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.collector_groups.poll_interval_seconds IS 'The global poll interval for each device in the collector group';
+
+
+--
+-- Name: collector_groups_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.collector_groups_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.collector_groups_id_seq OWNER TO postgres;
+
+--
+-- Name: collector_groups_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.collector_groups_id_seq OWNED BY public.collector_groups.id;
+
+
+--
 -- Name: device_list; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.device_list (
     id integer NOT NULL,
     device_name character varying NOT NULL,
-    location character varying,
-    ip_address character varying,
+    location character varying DEFAULT ''::character varying,
+    ip_address character varying DEFAULT ''::character varying,
     device_type_id integer NOT NULL,
-    enabled boolean
+    collector_group_id integer,
+    enabled boolean DEFAULT (1)::boolean,
+    poll_interval_seconds integer
 );
 
 
@@ -173,6 +224,13 @@ ALTER TABLE public.device_list OWNER TO postgres;
 --
 
 COMMENT ON COLUMN public.device_list.enabled IS 'Enables data collection for this device';
+
+
+--
+-- Name: COLUMN device_list.poll_interval_seconds; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.device_list.poll_interval_seconds IS 'Poll interval in seconds for this device';
 
 
 --
@@ -224,6 +282,13 @@ ALTER TABLE ONLY public.avtech_data ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: collector_groups id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.collector_groups ALTER COLUMN id SET DEFAULT nextval('public.collector_groups_id_seq'::regclass);
+
+
+--
 -- Name: device_list id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -244,6 +309,22 @@ ALTER TABLE ONLY public.ambient_station_data
 
 ALTER TABLE ONLY public.avtech_data
     ADD CONSTRAINT avtech_data_pkey PRIMARY KEY (device_id, "timestamp");
+
+
+--
+-- Name: collector_groups collector_groups_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.collector_groups
+    ADD CONSTRAINT collector_groups_pk PRIMARY KEY (id);
+
+
+--
+-- Name: collector_groups collector_groups_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.collector_groups
+    ADD CONSTRAINT collector_groups_unique UNIQUE (group_name);
 
 
 --
@@ -305,6 +386,14 @@ CREATE TRIGGER ts_insert_blocker BEFORE INSERT ON public.avtech_data FOR EACH RO
 
 ALTER TABLE ONLY public.avtech_data
     ADD CONSTRAINT avtech_data_device_types_fk FOREIGN KEY (device_type_id) REFERENCES public.device_types(id);
+
+
+--
+-- Name: device_list device_list_collector_groups_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_list
+    ADD CONSTRAINT device_list_collector_groups_fk FOREIGN KEY (collector_group_id) REFERENCES public.collector_groups(id);
 
 
 --

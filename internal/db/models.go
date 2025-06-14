@@ -48,19 +48,30 @@ type AvtechDatum struct {
 	Timestamp    pgtype.Timestamptz `db:"timestamp" json:"timestamp"`
 	TempF        float64            `db:"temp_f" json:"temp_f"`
 	TempC        float64            `db:"temp_c" json:"temp_c"`
-	Humidity     float64            `db:"humidity" json:"humidity"`
 	DeviceID     int32              `db:"device_id" json:"device_id"`
 	DeviceTypeID int32              `db:"device_type_id" json:"device_type_id"`
 }
 
+type CollectorGroup struct {
+	ID        int32  `db:"id" json:"id"`
+	GroupName string `db:"group_name" json:"group_name"`
+	// Global flag to enable collection for all devices in this group
+	Enabled bool `db:"enabled" json:"enabled"`
+	// The global poll interval for each device in the collector group
+	PollIntervalSeconds pgtype.Int4 `db:"poll_interval_seconds" json:"poll_interval_seconds"`
+}
+
 type DeviceList struct {
-	ID           int32       `db:"id" json:"id"`
-	DeviceName   string      `db:"device_name" json:"device_name"`
-	Location     pgtype.Text `db:"location" json:"location"`
-	IpAddress    pgtype.Text `db:"ip_address" json:"ip_address"`
-	DeviceTypeID int32       `db:"device_type_id" json:"device_type_id"`
+	ID               int32       `db:"id" json:"id"`
+	DeviceName       string      `db:"device_name" json:"device_name"`
+	Location         pgtype.Text `db:"location" json:"location"`
+	IpAddress        pgtype.Text `db:"ip_address" json:"ip_address"`
+	DeviceTypeID     int32       `db:"device_type_id" json:"device_type_id"`
+	CollectorGroupID pgtype.Int4 `db:"collector_group_id" json:"collector_group_id"`
 	// Enables data collection for this device
 	Enabled pgtype.Bool `db:"enabled" json:"enabled"`
+	// Poll interval in seconds for this device
+	PollIntervalSeconds pgtype.Int4 `db:"poll_interval_seconds" json:"poll_interval_seconds"`
 }
 
 type DeviceType struct {
