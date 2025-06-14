@@ -407,4 +407,3 @@ ALTER TABLE ONLY public.device_list
 --
 -- PostgreSQL database dump complete
 --
-

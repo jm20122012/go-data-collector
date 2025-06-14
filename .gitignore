@@ -3,3 +3,4 @@
 **/*.tar
 **/seed.sql
 **/data.sql
+**/*.bak

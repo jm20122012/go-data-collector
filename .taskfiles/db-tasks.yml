@@ -3,9 +3,41 @@ tasks:
   dump-schema:
     desc: "Write schema to schema.sql file"
     cmd: pg_dump -h localhost -U postgres -d data_collector_db --schema-only > ./sqlc/schema.sql
+  
   dump-data:
     desc: "Write data to data.sql file"
     cmd: pg_dump -h localhost -U postgres -d data_collector_db --data-only > data.sql
+  
+  dump-tsdb-schema-local:
+      cmd: >
+        pg_dump -U postgres -h localhost -p 5432 -Fc -v
+        --section=pre-data --exclude-schema="_timescaledb*"
+        -f dump_pre_data.bak data_collector_db
+
+  restore-tsdb-schema-remote:
+    env:
+      REMOTE_HOST: '{{.REMOTE_HOST | default .PGHOST}}'
+    cmd: >
+      pg_restore -U postgres -h $REMOTE_HOST -p 5432 --no-owner -Fc
+      -v -d data_collector_db dump_pre_data.bak
+
+  # After restore, you'll need to manually create hypertables
+  create-hypertables-remote:
+    env:
+      REMOTE_HOST: '{{.REMOTE_HOST | default .PGHOST}}'
+    cmd: >
+      psql -U postgres -h $REMOTE_HOST -p 5432 -d <REMOTE_DB_NAME>
+      -c "SELECT create_hypertable('avtech_data', 'timestamp', if_not_exists => TRUE);"
+      -c "SELECT create_hypertable('ambient_station_data', 'timestamp', if_not_exists => TRUE);"
+
+  create-hypertables-remote:
+    env:
+      REMOTE_HOST: '{{.REMOTE_HOST | default .PGHOST}}'
+    cmd: >
+      psql -U postgres -h $REMOTE_HOST -p 5432 -d data_collector_db
+      -c "SELECT create_hypertable('avtech_data', 'timestamp', if_not_exists => TRUE);"
+      -c "SELECT create_hypertable('ambient_station_data', 'timestamp', if_not_exists => TRUE);"
+
   apply-schema-local:
     desc: "Applies the schema.sql file to the local database instance"
     cmd: psql -h localhost -U postgres -d data_collector_db -f ./sqlc/schema.sql

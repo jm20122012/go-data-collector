@@ -1,13 +1,15 @@
-# go-data-collector
+**NOTE:** All commands are run using taskfiles.  Refer to task definition for actual commands.
 
-## To save database state:
-### After base schema is created:
-`pg_dump -h host -U user -d database --schema-only > schema.sql`
+Timescale requires special handling for schema restores. Follow the steps below to correctly dump and restore a TimescaleDB schema
 
-### Populate with device data, then create seed
-`pg_dump -h host -U user -d database --data-only > seed.sql`
+1) After base schema is created: 
+`task db:dump-tsdb-schema-local`
 
-## To load to new DB:
-1) Start the new DB
-2) `psql -h host -U user -d database -f schema.sql`
-3) `psql -h host -U user -d database -f seed.sql`
+2) Restore the schema to new DB (Make sure .env is populated correctly):
+`task db:restore-tsdb-schema-remote`
+
+3) Manually need to recreate hypertables (Make sure .env is populated: correctly)
+`task db:create-hypertables-remote`
+
+4) Use normal psql to seed the DB if required:
+`psql -h host -U user -d database -f seed.sql`
