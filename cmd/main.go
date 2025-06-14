@@ -55,7 +55,7 @@ func main() {
 	server.Start()
 
 	<-ctx.Done() // Wait for context done signal
-	wg.Wait()    // Wait for any go routines with a waitgroup to finish
+	wg.Wait()    // Wait for all go routines in the wait group to finish
 	os.Exit(0)   // Exit cleanly
 }
 

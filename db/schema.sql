@@ -50,35 +50,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: avtech_data; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.avtech_data (
-    id integer NOT NULL,
-    "timestamp" timestamp with time zone NOT NULL,
-    temp_f double precision NOT NULL,
-    temp_c double precision NOT NULL,
-    humidity double precision NOT NULL,
-    device_id integer NOT NULL,
-    device_type_id integer NOT NULL
-);
-
-
-ALTER TABLE public.avtech_data OWNER TO postgres;
-
---
--- Name: _hyper_2_1_chunk; Type: TABLE; Schema: _timescaledb_internal; Owner: postgres
---
-
-CREATE TABLE _timescaledb_internal._hyper_2_1_chunk (
-    CONSTRAINT constraint_1 CHECK ((("timestamp" >= '2025-06-05 00:00:00+00'::timestamp with time zone) AND ("timestamp" < '2025-06-12 00:00:00+00'::timestamp with time zone)))
-)
-INHERITS (public.avtech_data);
-
-
-ALTER TABLE _timescaledb_internal._hyper_2_1_chunk OWNER TO postgres;
-
---
 -- Name: ambient_station_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -143,6 +114,23 @@ ALTER SEQUENCE public.ambient_station_data_id_seq OWNED BY public.ambient_statio
 
 
 --
+-- Name: avtech_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.avtech_data (
+    id integer NOT NULL,
+    "timestamp" timestamp with time zone NOT NULL,
+    temp_f double precision NOT NULL,
+    temp_c double precision NOT NULL,
+    humidity double precision NOT NULL,
+    device_id integer NOT NULL,
+    device_type_id integer NOT NULL
+);
+
+
+ALTER TABLE public.avtech_data OWNER TO postgres;
+
+--
 -- Name: avtech_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -173,11 +161,19 @@ CREATE TABLE public.device_list (
     device_name character varying NOT NULL,
     location character varying,
     ip_address character varying,
-    device_type_id integer NOT NULL
+    device_type_id integer NOT NULL,
+    enabled boolean
 );
 
 
 ALTER TABLE public.device_list OWNER TO postgres;
+
+--
+-- Name: COLUMN device_list.enabled; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.device_list.enabled IS 'Enables data collection for this device';
+
 
 --
 -- Name: device_list_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -214,13 +210,6 @@ CREATE TABLE public.device_types (
 ALTER TABLE public.device_types OWNER TO postgres;
 
 --
--- Name: _hyper_2_1_chunk id; Type: DEFAULT; Schema: _timescaledb_internal; Owner: postgres
---
-
-ALTER TABLE ONLY _timescaledb_internal._hyper_2_1_chunk ALTER COLUMN id SET DEFAULT nextval('public.avtech_data_id_seq'::regclass);
-
-
---
 -- Name: ambient_station_data id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -239,14 +228,6 @@ ALTER TABLE ONLY public.avtech_data ALTER COLUMN id SET DEFAULT nextval('public.
 --
 
 ALTER TABLE ONLY public.device_list ALTER COLUMN id SET DEFAULT nextval('public.device_list_id_seq'::regclass);
-
-
---
--- Name: _hyper_2_1_chunk 1_2_avtech_data_pkey; Type: CONSTRAINT; Schema: _timescaledb_internal; Owner: postgres
---
-
-ALTER TABLE ONLY _timescaledb_internal._hyper_2_1_chunk
-    ADD CONSTRAINT "1_2_avtech_data_pkey" PRIMARY KEY (device_id, "timestamp");
 
 
 --
@@ -298,20 +279,6 @@ ALTER TABLE ONLY public.device_types
 
 
 --
--- Name: _hyper_2_1_chunk_avtech_data_device_type_idx; Type: INDEX; Schema: _timescaledb_internal; Owner: postgres
---
-
-CREATE INDEX _hyper_2_1_chunk_avtech_data_device_type_idx ON _timescaledb_internal._hyper_2_1_chunk USING btree (device_type_id);
-
-
---
--- Name: _hyper_2_1_chunk_avtech_data_timestamp_idx; Type: INDEX; Schema: _timescaledb_internal; Owner: postgres
---
-
-CREATE INDEX _hyper_2_1_chunk_avtech_data_timestamp_idx ON _timescaledb_internal._hyper_2_1_chunk USING btree ("timestamp" DESC);
-
-
---
 -- Name: avtech_data_device_type_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -330,14 +297,6 @@ CREATE INDEX avtech_data_timestamp_idx ON public.avtech_data USING btree ("times
 --
 
 CREATE TRIGGER ts_insert_blocker BEFORE INSERT ON public.avtech_data FOR EACH ROW EXECUTE FUNCTION _timescaledb_functions.insert_blocker();
-
-
---
--- Name: _hyper_2_1_chunk 1_1_avtech_data_device_types_fk; Type: FK CONSTRAINT; Schema: _timescaledb_internal; Owner: postgres
---
-
-ALTER TABLE ONLY _timescaledb_internal._hyper_2_1_chunk
-    ADD CONSTRAINT "1_1_avtech_data_device_types_fk" FOREIGN KEY (device_type_id) REFERENCES public.device_types(id);
 
 
 --

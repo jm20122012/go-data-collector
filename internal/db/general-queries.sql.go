@@ -12,7 +12,7 @@ import (
 )
 
 const getDeviceList = `-- name: GetDeviceList :many
-SELECT id, device_name, location, ip_address, device_type_id FROM device_list
+SELECT id, device_name, location, ip_address, device_type_id, enabled FROM device_list
 `
 
 func (q *Queries) GetDeviceList(ctx context.Context) ([]DeviceList, error) {
@@ -30,6 +30,7 @@ func (q *Queries) GetDeviceList(ctx context.Context) ([]DeviceList, error) {
 			&i.Location,
 			&i.IpAddress,
 			&i.DeviceTypeID,
+			&i.Enabled,
 		); err != nil {
 			return nil, err
 		}
@@ -95,15 +96,23 @@ INNER JOIN device_types dt ON dl.device_type_id = dt.id
 WHERE dt.device_type = $1
 `
 
-func (q *Queries) GetDeviceListByDeviceTypeName(ctx context.Context, deviceType string) ([]DeviceList, error) {
+type GetDeviceListByDeviceTypeNameRow struct {
+	ID           int32       `db:"id" json:"id"`
+	DeviceName   string      `db:"device_name" json:"device_name"`
+	Location     pgtype.Text `db:"location" json:"location"`
+	IpAddress    pgtype.Text `db:"ip_address" json:"ip_address"`
+	DeviceTypeID int32       `db:"device_type_id" json:"device_type_id"`
+}
+
+func (q *Queries) GetDeviceListByDeviceTypeName(ctx context.Context, deviceType string) ([]GetDeviceListByDeviceTypeNameRow, error) {
 	rows, err := q.db.Query(ctx, getDeviceListByDeviceTypeName, deviceType)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []DeviceList
+	var items []GetDeviceListByDeviceTypeNameRow
 	for rows.Next() {
-		var i DeviceList
+		var i GetDeviceListByDeviceTypeNameRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.DeviceName,

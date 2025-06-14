@@ -74,7 +74,6 @@ func (s *Server) Start() {
 func (s *Server) Stop() {
 	s.logger.Info("Stopping server...")
 
-	// Here you would typically clean up resources, stop collectors, etc.
 	s.wg.Wait() // Wait for all goroutines to finish
 	s.logger.Info("Server stopped successfully")
 }

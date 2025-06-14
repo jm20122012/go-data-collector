@@ -36,3 +36,7 @@ type DeviceConfig struct {
 type AvtechSensorConfig struct {
 	DeviceConfig
 }
+
+type AmbienWxStationConfig struct {
+	DeviceConfig
+}

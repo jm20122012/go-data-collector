@@ -59,6 +59,8 @@ type DeviceList struct {
 	Location     pgtype.Text `db:"location" json:"location"`
 	IpAddress    pgtype.Text `db:"ip_address" json:"ip_address"`
 	DeviceTypeID int32       `db:"device_type_id" json:"device_type_id"`
+	// Enables data collection for this device
+	Enabled pgtype.Bool `db:"enabled" json:"enabled"`
 }
 
 type DeviceType struct {
