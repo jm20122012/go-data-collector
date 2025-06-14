@@ -74,9 +74,9 @@ func (a *AvtechSensor) processAvtechResponse(response AvtechResponse) {
 
 	a.Logger.Debug("avtech write params built", "params", params)
 
-	// err = a.DBStore.WriteAvtechRecord(a.Ctx, params)
-	// if err != nil {
-	// 	a.Logger.Error("error writing avtech record", "error", err)
-	// }
+	err = a.DBStore.WriteAvtechRecord(a.Ctx, params)
+	if err != nil {
+		a.Logger.Error("error writing avtech record", "error", err)
+	}
 
 }
